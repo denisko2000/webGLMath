@@ -241,3 +241,37 @@ GLMath.prototype.setLookAt = function(eyeX, eyeY, eyeZ, centerX, centerY, center
     this.look_mtx = e;
 
 };
+
+/*WEBGL API*/
+GLMath.prototype.createProgram = function(gl, vertex_s, fragment_s) {
+    let program = gl.createProgram();
+    let vertex_shader = this.createShader(gl.VERTEX_SHADER, vertex_s);
+    let fragment_shader = this.createShader(gl.FRAGMENT_SHADER, fragment_s);
+    gl.attachShader(program, vertex_shader);
+    gl.attachShader(program, fragment_shader);
+    gl.linkProgram(program);
+    gl.validateProgram(program);
+    let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (!linked) {
+        let error = gl.getProgramInfoLog(program);
+        console.log('Failed to link program: ' + error);
+        gl.deleteProgram(program);
+        gl.deleteShader(fragmentShader);
+        gl.deleteShader(vertexShader);
+        return null;
+    }
+    return program
+};
+GLMath.prototype.createShader = function(gl, type, source) {
+    let shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (!compiled) {
+        let error = gl.getShaderInfoLog(shader);
+        console.log('Failed to compile shader: ' + error);
+        gl.deleteShader(shader);
+        return null;
+    }
+    return shader;
+};
