@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        
+        canvas {
+            display: block;
+        }
+        #value{
+        	position: absolute;
+        	z-index: 2;
+        	top: 0;
+        	left: 0;
+        	width: 100px;
+		    height: 50px;
+		    font-weight: bold;
+		    font-size: 43px;
+		    border: 7px solid aliceblue;
+        }
+    </style>
+</head>
+
+
+<body>
+    <script type="vertex_shader" id="vertex">
+        attribute vec4 a_Position;
+        attribute vec4 a_Normals;
+        uniform mat4 u_perspect_mat; 
+        uniform mat4 u_model_mat;
+        uniform mat4 u_normal_mat;
+        varying vec3 color;
+        void main(){
+        	vec3 normal_pos=normalize(vec3(u_normal_mat*a_Normals));
+        	float cosD = abs(dot(normal_pos,normalize(vec3(0.0,0.3,1.0))));
+        	color = vec3(1.0,1.0,1.0) * vec3(0.2,0.1,0.6) * cosD + vec3(0.5,0.5,0.5)* vec3(0.2,0.1,0.6);
+            vec4 model_position =u_model_mat * a_Position; 
+            gl_Position = u_perspect_mat * vec4(model_position.x,model_position.y,model_position.z-4.0,1.0); 
+        }
+    </script>
+    <script type="fragment_shader" id="fragment">
+    	precision mediump float;
+    	varying vec3 color;
+        void main(){ 
+            gl_FragColor = vec4(color,1.0); 
+        }
+    </script>
+    <script type="text/javascript" src="../webGLMath.js"></script>
+    <input type="number" id="value" placeholder="set value" value="3">
+    <canvas id="canvas"></canvas>
+    <script>
+    	let mat = new GLMath();
+        /* start pyramid */
+            let vertex = [
+               [
+                0.0, 0.5, 0.0, //top
+               -0.8,-0.5, 0.8, //left front
+               -0.8,-0.5,-0.8, //left back
+                0.8,-0.5, 0.8, //right front
+                0.8,-0.5,-0.8, //right back
+                ]
+            ];
+        /*              */
+       
+        let vertex_pos = [
+               [
+                0.0, 0.5, 0.0, //top
+               -0.8,-0.5, 0.8, //left front
+               -0.8,-0.5,-0.8, //left back
+               //
+                0.0, 0.5, 0.0, //top
+                0.8,-0.5,-0.8, //right back
+               -0.8,-0.5,-0.8, //left back
+               //
+                0.0, 0.5, 0.0, //top
+                0.8,-0.5,-0.8, //right back
+                0.8,-0.5, 0.8, //right front
+               //
+                0.0, 0.5, 0.0, //top
+               -0.8,-0.5, 0.8, //left front
+                0.8,-0.5, 0.8, //right front
+               //
+               -0.8,-0.5, 0.8, //left front
+               	0.8,-0.5,-0.8, //right back
+               -0.8,-0.5,-0.8, //left back
+               //
+               -0.8,-0.5, 0.8, //left front
+               	0.8,-0.5,-0.8, //right back
+                0.8,-0.5, 0.8, //right front
+                ]
+            ];
+        /*  
+        /* order */
+            let order = [
+                0,1,2, // left
+                3,4,5, // back
+                6,7,8, // right
+                9,10,11, // front
+                12,13,14, // bottom
+                15,16,17 // bottom 
+            ];
+        /*       */
+        /* normal */
+        let bottom = [0.0,-1.0,0.0];
+        let v_t_l_f = [vertex[0][3]-vertex[0][0],vertex[0][4]-vertex[0][1],vertex[0][5]-vertex[0][2]];
+        let v_t_r_b = [vertex[0][12]-vertex[0][0],vertex[0][13]-vertex[0][1],vertex[0][14]-vertex[0][2]];
+        let v_l_f_l_b =  [vertex[0][6]-vertex[0][3],vertex[0][7]-vertex[0][4],vertex[0][8]-vertex[0][5]];
+        let v_l_f_r_f =  [vertex[0][9]-vertex[0][3],vertex[0][10]-vertex[0][4],vertex[0][11]-vertex[0][5]];
+        let v_r_b_r_f =  [vertex[0][9]-vertex[0][12],vertex[0][10]-vertex[0][13],vertex[0][11]-vertex[0][14]];
+        let v_r_b_l_b =  [vertex[0][6]-vertex[0][12],vertex[0][7]-vertex[0][13],vertex[0][8]-vertex[0][14]];
+        let vd_tlf_lflb =mat.normalize([ // v_t_l_f × v_l_f_l_b LEFT 
+        v_l_f_l_b[1]*v_t_l_f[2]-v_l_f_l_b[2]*v_t_l_f[1],
+        v_l_f_l_b[0]*v_t_l_f[2]-v_l_f_l_b[2]*v_t_l_f[0],
+        v_l_f_l_b[0]*v_t_l_f[1]-v_l_f_l_b[1]*v_t_l_f[0],
+        ]);
+        let vd_tlf_lfrf =mat.normalize([ // v_t_l_f × v_l_f_r_f FRONT
+        v_t_l_f[1]*v_l_f_r_f[2]-v_t_l_f[2]*v_l_f_r_f[1],
+        v_t_l_f[0]*v_l_f_r_f[2]-v_t_l_f[2]*v_l_f_r_f[0],
+        v_t_l_f[0]*v_l_f_r_f[1]-v_t_l_f[1]*v_l_f_r_f[0],
+        ]);
+        let vd_trb_rbrf =mat.normalize([ // v_t_r_b × v_r_b_r_f RIGHT
+        v_r_b_r_f[1]*v_t_r_b[2]-v_r_b_r_f[2]*v_t_r_b[1],
+        v_r_b_r_f[0]*v_t_r_b[2]-v_r_b_r_f[2]*v_t_r_b[0],
+        v_r_b_r_f[0]*v_t_r_b[1]-v_r_b_r_f[1]*v_t_r_b[0],
+        ]);
+        let vd_trb_rblb =mat.normalize([ // v_t_r_b × v_r_b_l_b BACK
+        v_t_r_b[1]*v_r_b_l_b[2]-v_t_r_b[2]*v_r_b_l_b[1],
+        v_t_r_b[0]*v_r_b_l_b[2]-v_t_r_b[2]*v_r_b_l_b[0],
+        v_t_r_b[0]*v_r_b_l_b[1]-v_t_r_b[1]*v_r_b_l_b[0],
+        ]); 
+
+        let normals =vd_tlf_lflb.concat(vd_tlf_lflb).concat(vd_tlf_lflb)
+        			.concat(vd_trb_rblb).concat(vd_trb_rblb).concat(vd_trb_rblb)
+        			.concat(vd_trb_rbrf).concat(vd_trb_rbrf).concat(vd_trb_rbrf)
+        			.concat(vd_tlf_lfrf).concat(vd_tlf_lfrf).concat(vd_tlf_lfrf)
+        			.concat(bottom).concat(bottom).concat(bottom)
+        			.concat(bottom).concat(bottom).concat(bottom);	   
+        /**/
+        let canvas = document.getElementById('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let gl = canvas.getContext('webgl');
+        let program = mat.createProgram(gl,document.getElementById('vertex').innerHTML,document.getElementById('fragment').innerHTML);
+        gl.useProgram(program);
+        program.a_Position = gl.getAttribLocation(program,'a_Position');
+        program.a_Normals = gl.getAttribLocation(program,'a_Normals');
+        program.u_model_mat = gl.getUniformLocation(program,'u_model_mat');
+        program.u_perspect_mat = gl.getUniformLocation(program,'u_perspect_mat');
+        program.u_normal_mat = gl.getUniformLocation(program, 'u_normal_mat');
+        mat.setPerspective(Math.PI/3, canvas.width/canvas.height, 2, 100);
+        gl.uniformMatrix4fv(program.u_normal_mat,false,mat.inverseMat().inverse);
+        gl.uniformMatrix4fv(program.u_model_mat,false,mat.mtx);
+        gl.uniformMatrix4fv(program.u_perspect_mat,false,mat.perspective_mtx);
+        let element_buffer = mat.createBuffer_e(gl,order);
+        let buffers = [];
+        let normal_buffer=mat.createBuffer_a(gl,normals,3);
+        function draw() {
+            gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+            for(let i = 0; i<triangles.length; i++){
+               	mat.useBuffer_a(gl,normal_buffer,program.a_Normals);
+                mat.useBuffer_a(gl, buffers[i], program.a_Position);
+                mat.drawElements(gl,element_buffer,gl.TRIANGLES);
+            };
+        };
+
+        gl.clearColor(0.5,0.5,0.5,1.0);
+        gl.enable(gl.DEPTH_TEST);
+        //draw();
+        /*fractal functions*/
+        let triangles = vertex_pos;
+        function breakdown(triangle){
+            let t_l_f = [triangle[3]+(triangle[0]-triangle[3])/2,triangle[4]+(triangle[1]-triangle[4])/2,triangle[5]+(triangle[2]-triangle[5])/2];
+            let t_l_b = [triangle[6]+(triangle[0]-triangle[6])/2,triangle[7]+(triangle[1]-triangle[7])/2,triangle[8]+(triangle[2]-triangle[8])/2];
+            let t_r_f = [triangle[9]+(triangle[0]-triangle[9])/2,triangle[10]+(triangle[1]-triangle[10])/2,triangle[11]+(triangle[2]-triangle[11])/2];
+            let t_r_b = [triangle[12]+(triangle[0]-triangle[12])/2,triangle[13]+(triangle[1]-triangle[13])/2,triangle[14]+(triangle[2]-triangle[14])/2];
+            let l_f_r_f = [triangle[9]+(triangle[3]-triangle[9])/2,triangle[10]+(triangle[4]-triangle[10])/2,triangle[11]+(triangle[5]-triangle[11])/2];
+            let l_f_l_b = [triangle[6]+(triangle[3]-triangle[6])/2,triangle[7]+(triangle[4]-triangle[7])/2,triangle[8]+(triangle[5]-triangle[8])/2];
+            let l_f_r_b = [triangle[12]+(triangle[3]-triangle[12])/2,triangle[13]+(triangle[4]-triangle[13])/2,triangle[14]+(triangle[5]-triangle[14])/2];
+            let l_b_r_b =[triangle[12]+(triangle[6]-triangle[12])/2,triangle[13]+(triangle[7]-triangle[13])/2,triangle[14]+(triangle[8]-triangle[14])/2];
+            let r_f_r_b =[triangle[12]+(triangle[9]-triangle[12])/2,triangle[13]+(triangle[10]-triangle[13])/2,triangle[14]+(triangle[11]-triangle[14])/2];
+            let top_triangle =[triangle[0],triangle[1],triangle[2]].concat(t_l_f).concat(t_l_b).concat(t_r_f).concat(t_r_b);
+            let left_front_triangle =t_l_f.concat([triangle[3],triangle[4],triangle[5]]).concat(l_f_l_b).concat(l_f_r_f).concat(l_f_r_b);
+            let left_back_triangle = t_l_b.concat(l_f_l_b).concat([triangle[6],triangle[7],triangle[8]]).concat(l_f_r_b).concat(l_b_r_b);
+            let right_front_triangle = t_r_f.concat(l_f_r_f).concat(l_f_r_b).concat([triangle[9],triangle[10],triangle[11]]).concat(r_f_r_b);
+            let right_back_triangle =t_r_b.concat(l_f_r_b).concat(l_b_r_b).concat(r_f_r_b).concat([triangle[12],triangle[13],triangle[14]]);
+            return [top_triangle, left_front_triangle, left_back_triangle, right_front_triangle, right_back_triangle];
+        };
+        function concat(arr, step){
+        	let new_arr = [];
+        	if(step==0){
+				new_arr = arr;
+        	};
+            for (let i  = 0; i < step; i++) {
+            	new_arr = [];
+                for (let k  = 0; k < arr.length; k++) {
+                    new_arr = new_arr.concat(breakdown(arr[k]));
+                };
+                arr = new_arr;
+            };
+            triangles=[];
+                 for(let u = 0; u<new_arr.length; u++){
+			         triangles[u] = [
+							new_arr[u][0],new_arr[u][1],new_arr[u][2],    //top
+							new_arr[u][3],new_arr[u][4],new_arr[u][5],    //left front
+							new_arr[u][6],new_arr[u][7],new_arr[u][8],    //left back
+
+							new_arr[u][0],new_arr[u][1],new_arr[u][2],    //top
+							new_arr[u][12],new_arr[u][13],new_arr[u][14], //right back
+							new_arr[u][6],new_arr[u][7],new_arr[u][8],    //left back
+
+							new_arr[u][0],new_arr[u][1],new_arr[u][2],    //top
+							new_arr[u][12],new_arr[u][13],new_arr[u][14], //right back
+							new_arr[u][9],new_arr[u][10],new_arr[u][11],  //right front
+
+							new_arr[u][0],new_arr[u][1],new_arr[u][2],    //top
+							new_arr[u][3],new_arr[u][4],new_arr[u][5],    //left front
+							new_arr[u][9],new_arr[u][10],new_arr[u][11],  //right front
+
+							new_arr[u][3],new_arr[u][4],new_arr[u][5],    //left front
+			               	new_arr[u][12],new_arr[u][13],new_arr[u][14], //right back
+			                new_arr[u][6],new_arr[u][7],new_arr[u][8],    //left back
+			               
+			               new_arr[u][3],new_arr[u][4],new_arr[u][5],    //left front
+			               new_arr[u][12],new_arr[u][13],new_arr[u][14], //right back
+			               new_arr[u][9],new_arr[u][10],new_arr[u][11],  //right front
+			         ];
+		        };
+            for (let k  = 0; k < buffers.length; k++) {
+				gl.deleteBuffer(buffers[k]);
+            };
+            buffers = [];
+            for (let k  = 0; k < triangles.length; k++) {
+				buffers[k] =mat.createBuffer_a(gl,triangles[k],3);
+            };
+            
+            draw();
+        };
+        concat(vertex, 3);
+        document.getElementById('value').addEventListener('input',function(e){
+        	concat(vertex, this.value);
+        });
+        /**/
+        /*mouse action*/
+        let touch_started = false;
+        let touch_start_coord = {};
+        let saved_angle = {x:0,z:0};
+        let angle = {};
+        canvas.addEventListener('mousedown',e=>{
+            touch_started = true;
+            touch_start_coord.x = e.clientX;
+            touch_start_coord.y = e.clientY;
+        });
+        canvas.addEventListener('mousemove',e=>{
+            if(!touch_started)
+                return false;
+            angle.z=(e.clientX-touch_start_coord.x)/window.innerWidth*Math.PI*-1;
+            angle.x=(e.clientY-touch_start_coord.y)/window.innerHeight*Math.PI;
+            mat.mtx = mat.setOne();
+            mat.rotateY(angle.z+saved_angle.z);
+            mat.rotateX(angle.x+saved_angle.x);
+            gl.uniformMatrix4fv(program.u_model_mat,false,mat.mtx);
+            gl.uniformMatrix4fv(program.u_normal_mat,false,mat.inverseMat().inverse);
+            draw();
+        });
+        canvas.addEventListener('mouseup',e=>{
+            touch_started = false;
+            angle.z=(e.clientX-touch_start_coord.x)/window.innerWidth*Math.PI*-1;
+            angle.x=(e.clientY-touch_start_coord.y)/window.innerHeight*Math.PI;
+            saved_angle.z+=angle.z;
+            saved_angle.x+=angle.x;
+            mat.mtx = mat.setOne();
+            mat.rotateY(saved_angle.z);
+            mat.rotateX(saved_angle.x);
+            gl.uniformMatrix4fv(program.u_model_mat,false,mat.mtx);
+            gl.uniformMatrix4fv(program.u_normal_mat,false,mat.inverseMat().inverse);
+            draw();
+        });
+    </script>
+</body>
+
+</html>

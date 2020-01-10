@@ -151,7 +151,7 @@ GLMath.prototype.normalize = function(arr) {
 
 GLMath.prototype.inverseMat = function(usermat) {
     this.inverse = [];
-    let newMat = (usermat != undefined) ? usermat : this.matrix;
+    let newMat = (usermat != undefined) ? usermat : this.mtx;
     let local_determinant = 1 / this.determinant(JSON.parse(JSON.stringify(newMat)));
     for (let index = 0; index < Math.sqrt(newMat.length); index++) {
         for (let i = 0; i < Math.sqrt(newMat.length); i++) {
@@ -245,8 +245,8 @@ GLMath.prototype.setLookAt = function(eyeX, eyeY, eyeZ, centerX, centerY, center
 /*WEBGL API*/
 GLMath.prototype.createProgram = function(gl, vertex_s, fragment_s) {
     let program = gl.createProgram();
-    let vertex_shader = this.createShader(gl.VERTEX_SHADER, vertex_s);
-    let fragment_shader = this.createShader(gl.FRAGMENT_SHADER, fragment_s);
+    let vertex_shader = this.createShader(gl, gl.VERTEX_SHADER, vertex_s);
+    let fragment_shader = this.createShader(gl, gl.FRAGMENT_SHADER, fragment_s);
     gl.attachShader(program, vertex_shader);
     gl.attachShader(program, fragment_shader);
     gl.linkProgram(program);
@@ -260,7 +260,7 @@ GLMath.prototype.createProgram = function(gl, vertex_s, fragment_s) {
         gl.deleteShader(vertexShader);
         return null;
     }
-    return program
+    return program;
 };
 GLMath.prototype.createShader = function(gl, type, source) {
     let shader = gl.createShader(type);
@@ -274,4 +274,31 @@ GLMath.prototype.createShader = function(gl, type, source) {
         return null;
     }
     return shader;
+};
+GLMath.prototype.createBuffer_a = function(gl,array,step){
+    let buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER,null);
+    buffer.step = step;
+    return buffer;
+};
+GLMath.prototype.useBuffer_a = function(gl,buffer,attribute){
+    gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+    gl.vertexAttribPointer(attribute,buffer.step,gl.FLOAT,false,0,0);
+    gl.enableVertexAttribArray(attribute);
+    gl.bindBuffer(gl.ARRAY_BUFFER,null);
+};
+GLMath.prototype.createBuffer_e = function (gl,array){
+    let buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(array), gl.STATIC_DRAW);
+    buffer.length = array.length;
+    gl.bindBuffer(gl.ARRAY_BUFFER,null);
+    return buffer;
+};
+GLMath.prototype.drawElements = function(gl,buffer,type){
+     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,buffer);
+     gl.drawElements(type,buffer.length,gl.UNSIGNED_BYTE,0);
+     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,null);
 };
